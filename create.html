@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Raum erstellen</title>
+</head>
+<body>
+
+<h2>Raum erstellen</h2>
+
+<button onclick="createRoom()">Raum erstellen</button>
+
+<p id="roomId"></p>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set }
+        from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCwT6N2mREk_UpZSkNEL4EiXuaJiXI1P7I",
+        authDomain: "screensharing-86355.firebaseapp.com",
+        projectId: "screensharing-86355",
+        storageBucket: "screensharing-86355.firebasestorage.app",
+        messagingSenderId: "470446979255",
+        appId: "1:470446979255:web:1f20a4e34208e7372db532"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    function generateId() {
+        return Math.random().toString(36).substring(2, 8);
+    }
+
+    window.createRoom = function () {
+        const roomId = generateId();
+
+        set(ref(db, "rooms/" + roomId), {
+            created: Date.now()
+        });
+
+        document.getElementById("roomId").innerText = "Room ID: " + roomId;
+        window.location.href = "join.html?room=" + roomId;
+    };
+</script>
+
+</body>
+</html>
