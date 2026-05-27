@@ -60,6 +60,10 @@
         const roomRef = db.ref("rooms/" + roomId);
 
         roomRef.child("offer").on("value", async (snap) => {
+            if (snap.val() === null) {
+                return;
+            }
+
             const offer = JSON.parse(atob(snap.val()));
 
             await pc.setRemoteDescription(offer);
@@ -77,6 +81,10 @@
         });
 
         roomRef.child("finish").on("value", async (snap) => {
+            if (snap.val() === null) {
+                return;
+            }
+
             statusEl.textContent = "connected";
 
             await roomRef.child("finish").remove();
