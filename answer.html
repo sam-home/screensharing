@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <title>WebRTC Viewer</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <style>
         body { font-family: sans-serif; max-width: 900px; margin: 40px auto; }
@@ -16,21 +18,34 @@
 
 <h1>👀 Viewer</h1>
 
-<textarea id="offerInput" placeholder="Offer hier einfügen..."></textarea>
-<button id="connect">Verbinden</button>
+<input type="text" id="roomId">
+
+<button id="connectBtn">connect</button>
 
 <div id="status">idle</div>
 
 <video id="video" autoplay playsinline controls></video>
 
-<textarea id="answerBox" readonly placeholder="Answer erscheint hier..."></textarea>
-<button id="copy" disabled>Answer kopieren</button>
-
 <script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyCwT6N2mREk_UpZSkNEL4EiXuaJiXI1P7I",
+        authDomain: "screensharing-86355.firebaseapp.com",
+        projectId: "screensharing-86355",
+        databaseURL: "https://screensharing-86355-default-rtdb.europe-west1.firebasedatabase.app/",
+        storageBucket: "screensharing-86355.firebasestorage.app",
+        messagingSenderId: "470446979255",
+        appId: "1:470446979255:web:1f20a4e34208e7372db532"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
     const pc = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
     });
 
+    const roomIdInput = document.getElementById("roomId");
+    const connectBtn = document.getElementById("connectBtn");
     const offerInput = document.getElementById("offerInput");
     const answerBox = document.getElementById("answerBox");
     const statusEl = document.getElementById("status");
@@ -40,6 +55,30 @@
     pc.ontrack = (e) => {
         video.srcObject = e.streams[0];
     };
+
+    connectBtn.onclick = (e) => {
+        const roomId = roomIdInput.value;
+
+
+        const roomRef = db.ref("rooms/" + roomId);
+
+        roomRef.child("offer").on("value", async (snap) => {
+            const offer = JSON.parse(atob(snap.val()));
+
+            await pc.setRemoteDescription(offer);
+
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+
+            statusEl.textContent = "gathering ICE...";
+
+            await waitIceComplete(pc);
+
+            await roomRef.child('answer').set(btoa(JSON.stringify(pc.localDescription)));
+
+            await roomRef.child("offer").remove();
+        });
+    }
 
     function waitIceComplete(pc) {
         return new Promise(resolve => {

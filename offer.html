@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <title>Offer</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
         body { font-family: sans-serif; max-width: 900px; margin: 40px auto; }
         button { padding: 10px 14px; margin: 5px; }
@@ -15,8 +17,9 @@
 
 <h1>📡 Offer (Streamer)</h1>
 
-<button id="start">Bildschirm teilen</button>
-<button id="copyOffer" disabled>Offer kopieren</button>
+<button id="start">Share</button>
+
+<div id="roomId"></div>
 
 <div id="status">idle</div>
 
@@ -30,6 +33,19 @@
 <video id="preview" autoplay muted playsinline></video>
 
 <script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyCwT6N2mREk_UpZSkNEL4EiXuaJiXI1P7I",
+        authDomain: "screensharing-86355.firebaseapp.com",
+        projectId: "screensharing-86355",
+        databaseURL: "https://screensharing-86355-default-rtdb.europe-west1.firebasedatabase.app/",
+        storageBucket: "screensharing-86355.firebasestorage.app",
+        messagingSenderId: "470446979255",
+        appId: "1:470446979255:web:1f20a4e34208e7372db532"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
     const pc = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
     });
@@ -38,6 +54,7 @@
     const copyOfferBtn = document.getElementById("copyOffer");
     const connectBtn = document.getElementById("connect");
 
+    const roomIdDiv = document.getElementById("roomId");
     const offerBox = document.getElementById("offerBox");
     const answerBox = document.getElementById("answerBox");
     const statusEl = document.getElementById("status");
@@ -50,6 +67,10 @@
     pc.onicegatheringstatechange = () => {
         statusEl.textContent = "ICE: " + pc.iceGatheringState;
     };
+
+    function generateId() {
+        return Math.random().toString(36).substring(2, 8);
+    }
 
     function waitIce(pc) {
         return new Promise(r => {
@@ -75,8 +96,27 @@
 
         await waitIce(pc);
 
-        offerBox.value = btoa(JSON.stringify(pc.localDescription));
-        copyOfferBtn.disabled = false;
+        const roomId = generateId();
+
+        const roomRef = db.ref("rooms/" + roomId);
+
+        roomRef.child("init").on("value", async (snap) => {
+            console.log(snap.val());
+
+            await roomRef.child('offer').set(btoa(JSON.stringify(pc.localDescription)));
+
+            await roomRef.child("init").remove();
+        });
+
+        roomRef.child("answer").on("value", async (snap) => {
+            const answer = JSON.parse(atob(snap.val()));
+            await pc.setRemoteDescription(answer);
+            statusEl.textContent = "connected";
+
+            await roomRef.child("answer").remove();
+        });
+
+        roomIdDiv.innerText = roomId;
     };
 
     copyOfferBtn.onclick = async () => {
