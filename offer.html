@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <title>Offer</title>
+    <style>
+        body { font-family: sans-serif; max-width: 900px; margin: 40px auto; }
+        button { padding: 10px 14px; margin: 5px; }
+        textarea { width: 100%; height: 140px; font-family: monospace; }
+        video { width: 100%; background: black; border-radius: 10px; margin-top: 10px; }
+        #status { font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<h1>📡 Offer (Streamer)</h1>
+
+<button id="start">Bildschirm teilen</button>
+<button id="copyOffer" disabled>Offer kopieren</button>
+
+<div id="status">idle</div>
+
+<h3>Offer</h3>
+<textarea id="offerBox" readonly></textarea>
+
+<h3>Answer einfügen</h3>
+<textarea id="answerBox"></textarea>
+<button id="connect">Mit Answer verbinden</button>
+
+<video id="preview" autoplay muted playsinline></video>
+
+<script>
+    const pc = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    });
+
+    const startBtn = document.getElementById("start");
+    const copyOfferBtn = document.getElementById("copyOffer");
+    const connectBtn = document.getElementById("connect");
+
+    const offerBox = document.getElementById("offerBox");
+    const answerBox = document.getElementById("answerBox");
+    const statusEl = document.getElementById("status");
+    const preview = document.getElementById("preview");
+
+    pc.onconnectionstatechange = () => {
+        statusEl.textContent = pc.connectionState;
+    };
+
+    pc.onicegatheringstatechange = () => {
+        statusEl.textContent = "ICE: " + pc.iceGatheringState;
+    };
+
+    function waitIce(pc) {
+        return new Promise(r => {
+            if (pc.iceGatheringState === "complete") return r();
+            pc.onicegatheringstatechange = () => {
+                if (pc.iceGatheringState === "complete") r();
+            };
+        });
+    }
+
+    startBtn.onclick = async () => {
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: true
+        });
+
+        preview.srcObject = stream;
+
+        stream.getTracks().forEach(t => pc.addTrack(t, stream));
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        await waitIce(pc);
+
+        offerBox.value = btoa(JSON.stringify(pc.localDescription));
+        copyOfferBtn.disabled = false;
+    };
+
+    copyOfferBtn.onclick = async () => {
+        await navigator.clipboard.writeText(offerBox.value);
+        alert("Offer kopiert");
+    };
+
+    connectBtn.onclick = async () => {
+        const answer = JSON.parse(atob(answerBox.value.trim()));
+        await pc.setRemoteDescription(answer);
+        statusEl.textContent = "connected";
+    };
+</script>
+
+</body>
+</html>
