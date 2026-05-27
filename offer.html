@@ -19,7 +19,9 @@
 
 <button id="start">Share</button>
 
-<div id="roomId"></div>
+<div id="link"></div>
+
+<button id="copy">copy</button>
 
 <div id="status">idle</div>
 
@@ -45,7 +47,8 @@
 
     const startBtn = document.getElementById("start");
 
-    const roomIdDiv = document.getElementById("roomId");
+    const linkDiv = document.getElementById("link");
+    const copyBtn = document.getElementById("copy");
     const statusEl = document.getElementById("status");
     const preview = document.getElementById("preview");
 
@@ -113,8 +116,13 @@
             await roomRef.child("answer").remove();
         });
 
-        roomIdDiv.innerText = roomId;
+        linkDiv.innerText = location.origin + location.pathname.replace("offer.html", "answer.html") +
+            "?roomId=" + roomId;
     };
+
+    copyBtn.onclick = () => {
+        navigator.clipboard.writeText(linkDiv.innerText);
+    }
 </script>
 
 </body>

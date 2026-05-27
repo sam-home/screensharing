@@ -18,8 +18,6 @@
 
 <h1>👀 Viewer</h1>
 
-<input type="text" id="roomId">
-
 <button id="connectBtn">connect</button>
 
 <div id="status">idle</div>
@@ -44,7 +42,6 @@
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
     });
 
-    const roomIdInput = document.getElementById("roomId");
     const connectBtn = document.getElementById("connectBtn");
     const statusEl = document.getElementById("status");
     const video = document.getElementById("video");
@@ -54,8 +51,8 @@
     };
 
     connectBtn.onclick = async (e) => {
-        const roomId = roomIdInput.value;
-
+        const params = new URLSearchParams(window.location.search);
+        const roomId = params.get("roomId");
 
         const roomRef = db.ref("rooms/" + roomId);
 
