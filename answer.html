@@ -46,17 +46,14 @@
 
     const roomIdInput = document.getElementById("roomId");
     const connectBtn = document.getElementById("connectBtn");
-    const offerInput = document.getElementById("offerInput");
-    const answerBox = document.getElementById("answerBox");
     const statusEl = document.getElementById("status");
     const video = document.getElementById("video");
-    const copyBtn = document.getElementById("copy");
 
     pc.ontrack = (e) => {
         video.srcObject = e.streams[0];
     };
 
-    connectBtn.onclick = (e) => {
+    connectBtn.onclick = async (e) => {
         const roomId = roomIdInput.value;
 
 
@@ -78,6 +75,14 @@
 
             await roomRef.child("offer").remove();
         });
+
+        roomRef.child("finish").on("value", async (snap) => {
+            statusEl.textContent = "connected";
+
+            await roomRef.child("finish").remove();
+        });
+
+        await roomRef.child("init").set(true);
     }
 
     function waitIceComplete(pc) {
@@ -89,29 +94,6 @@
             };
         });
     }
-
-    document.getElementById("connect").onclick = async () => {
-        const offer = JSON.parse(atob(offerInput.value.trim()));
-
-        await pc.setRemoteDescription(offer);
-
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-
-        statusEl.textContent = "gathering ICE...";
-
-        await waitIceComplete(pc);
-
-        answerBox.value = btoa(JSON.stringify(pc.localDescription));
-
-        statusEl.textContent = "ready (copy answer)";
-        copyBtn.disabled = false;
-    };
-
-    copyBtn.onclick = async () => {
-        await navigator.clipboard.writeText(answerBox.value);
-        alert("Answer kopiert");
-    };
 </script>
 
 </body>

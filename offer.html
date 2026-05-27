@@ -23,13 +23,6 @@
 
 <div id="status">idle</div>
 
-<h3>Offer</h3>
-<textarea id="offerBox" readonly></textarea>
-
-<h3>Answer einfügen</h3>
-<textarea id="answerBox"></textarea>
-<button id="connect">Mit Answer verbinden</button>
-
 <video id="preview" autoplay muted playsinline></video>
 
 <script>
@@ -51,12 +44,8 @@
     });
 
     const startBtn = document.getElementById("start");
-    const copyOfferBtn = document.getElementById("copyOffer");
-    const connectBtn = document.getElementById("connect");
 
     const roomIdDiv = document.getElementById("roomId");
-    const offerBox = document.getElementById("offerBox");
-    const answerBox = document.getElementById("answerBox");
     const statusEl = document.getElementById("status");
     const preview = document.getElementById("preview");
 
@@ -113,21 +102,12 @@
             await pc.setRemoteDescription(answer);
             statusEl.textContent = "connected";
 
+            await roomRef.child("finish").set(true);
+
             await roomRef.child("answer").remove();
         });
 
         roomIdDiv.innerText = roomId;
-    };
-
-    copyOfferBtn.onclick = async () => {
-        await navigator.clipboard.writeText(offerBox.value);
-        alert("Offer kopiert");
-    };
-
-    connectBtn.onclick = async () => {
-        const answer = JSON.parse(atob(answerBox.value.trim()));
-        await pc.setRemoteDescription(answer);
-        statusEl.textContent = "connected";
     };
 </script>
 
